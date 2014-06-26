@@ -123,6 +123,54 @@ export class EventSourced implements IEventSourced {
   }
 }
 
+export class RedisResource {
+  private client : Redis.RedisClient;
+
+  constructor(options : IRedisConnectionOptions){
+    this.options = options;
+  }
+
+  options : IRedisConnectionOptions;
+
+  getClient() : Redis.RedisClient{
+    return this.client;
+  }
+
+  connect(callback : (error)=>void ):void{
+    this.client = Redis.createClient(this.options.port, this.options.host);
+
+    this.client.on('error', function(errorMessage){
+      if (errorMessage.indexOf && errorMessage.indexOf('connect') >= 0) {
+        callback(errorMessage);
+      }
+    });
+
+    this.client.on('ready', callback);
+  }
+}
+
+export class RedisCommandBus extends RedisResource implements ICommandHandler{
+  constructor(options : IRedisConnectionOptions){
+    super(options);
+  }
+
+  handleCommand(commandToHandle : IEnvelope<ICommand>, callback: (error)=>void): void{
+    var commandSerialized = JSON.stringify(commandToHandle);
+    this.getClient().rpush('messaging.queuedcommands', commandSerialized, callback);
+  }
+}
+
+export class RedisEventBus extends RedisResource implements IEventHandler{
+  constructor(options : IRedisConnectionOptions){
+    super(options);
+  }
+
+  handleEvent(eventToHandle : IEnvelope<IEvent>, callback: (error)=>void): void{
+    var eventSerialized = JSON.stringify(eventToHandle);
+    this.getClient().rpush('messaging.queuedevents', eventSerialized, callback);
+  }
+}
+
 export interface IEventSourcedRepository {
   getEventsByAggregateId(id : string, callback : (error : any, events : Array<IVersionedEvent>) => void);
   saveEventsByAggregateId(id : string, events : Array<IVersionedEvent>,  callback: (error: any) => void);
@@ -156,34 +204,14 @@ export interface IRedisConnectionOptions{
   port:number;
 }
 
-export class RedisEventSourcedRepository implements IEventSourcedRepository{
-  private client : Redis.RedisClient;
-
-  constructor(options : any){
-      this.options = options;
-  }
-
-  options : IRedisConnectionOptions;
-
-  getClient() : Redis.RedisClient{
-    return this.client;
-  }
-
-  connect(callback : (error)=>void ):void{
-    this.client = Redis.createClient(this.options.port, this.options.host);
-
-    this.client.on('error', function(errorMessage){
-      if (errorMessage.indexOf && errorMessage.indexOf('connect') >= 0) {
-        callback(errorMessage);
-      }
-    });
-
-    this.client.on('ready', callback);
+export class RedisEventSourcedRepository extends RedisResource implements IEventSourcedRepository{
+  constructor(options : IRedisConnectionOptions){
+      super(options);
   }
 
   getEventsByAggregateId(id : string, callback : (error : any, events : Array<IVersionedEvent>) => void){
     var self = this;
-    this.client.lrange('aggregate:' + id,0,-1, function(error, results){
+    this.getClient().lrange('eventsourcing.aggregate:' + id,0,-1, function(error, results){
       self.constructResultsResponse(error, results, callback);
     });
   }
@@ -197,7 +225,7 @@ export class RedisEventSourcedRepository implements IEventSourcedRepository{
     var self = this;
     Async.forEachSeries(events, function(versionedEvent : IVersionedEvent, callback : (error:any)=>void){
       var serializedEvent = JSON.stringify(versionedEvent);
-      self.client.rpush('aggregate:' + versionedEvent.sourceId, serializedEvent, function(error){
+      self.getClient().rpush('eventsourcing.aggregate:' + versionedEvent.sourceId, serializedEvent, function(error){
         if(error) return callback(error);
         callback(null);
       });

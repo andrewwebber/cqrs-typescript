@@ -124,6 +124,7 @@ describe('CQRS Tests', function () {
                 accountFromEvents.getVersion().should.be.exactly(account.getVersion());
             });
         });
+
         describe('using an in memory "event sourced" repository', function () {
             var provider = new CQRS.InMemoryEventSourcedRepository();
 
@@ -207,7 +208,7 @@ describe('CQRS Tests', function () {
     });
 
     describe('Infrastructure tests', function () {
-        describe('redis event sourced provides', function () {
+        describe('Redis event sourced repository', function () {
             var account = new BankAccount('2');
             account.credit(100);
             account.credit(100);
@@ -246,7 +247,125 @@ describe('CQRS Tests', function () {
             });
 
             after(function (done) {
-                provider.getClient().del('aggregate:' + account.getId(), function (error) {
+                provider.getClient().del('eventsourcing.aggregate:' + account.getId(), function (error) {
+                    should.equal(error, null);
+                    done();
+                });
+            });
+        });
+
+        describe('Redis command bus', function () {
+            var redisCommandBus = new CQRS.RedisCommandBus({ host: "127.0.0.1", port: 6379 });
+            it('should connect to a specified Redis server', function (done) {
+                redisCommandBus.connect(function (error) {
+                    should.equal(error, null);
+                    done();
+                });
+            });
+
+            it('should be possible to persist a command into Redis in the pending commands list', function (done) {
+                var testCommand = new TestCommand('hello world');
+                testCommand.id = "1";
+                redisCommandBus.handleCommand({
+                    messageId: "1",
+                    correlationId: "1",
+                    body: testCommand
+                }, function (error) {
+                    should.equal(error, null);
+
+                    redisCommandBus.getClient().lrange('messaging.queuedcommands', 0, -1, function (error, results) {
+                        should.equal(error, null);
+                        results.length.should.be.exactly(1);
+                        var commandSerialized = results[0];
+                        var command = JSON.parse(commandSerialized);
+                        command.body.message.should.be.exactly(testCommand.message);
+                        done();
+                    });
+                });
+            });
+
+            it('should be possible to persist another command into Redis in the pending commands list', function (done) {
+                var testCommand = new TestCommand('hello world2');
+                testCommand.id = "1";
+                redisCommandBus.handleCommand({
+                    messageId: "1",
+                    correlationId: "1",
+                    body: testCommand
+                }, function (error) {
+                    should.equal(error, null);
+
+                    redisCommandBus.getClient().lrange('messaging.queuedcommands', 0, -1, function (error, results) {
+                        should.equal(error, null);
+                        results.length.should.be.exactly(2);
+                        var commandSerialized = results[1];
+                        var command = JSON.parse(commandSerialized);
+                        command.body.message.should.be.exactly(testCommand.message);
+                        done();
+                    });
+                });
+            });
+
+            after(function (done) {
+                redisCommandBus.getClient().del('messaging.queuedcommands', function (error) {
+                    should.equal(error, null);
+                    done();
+                });
+            });
+        });
+
+        describe('Redis event bus', function () {
+            var redisEventBus = new CQRS.RedisEventBus({ host: "127.0.0.1", port: 6379 });
+            it('should connect to a specified Redis server', function (done) {
+                redisEventBus.connect(function (error) {
+                    should.equal(error, null);
+                    done();
+                });
+            });
+
+            it('should be possible to persist an event into Redis in the pending commands list', function (done) {
+                var testEvent = new TestEventMessageReceived('hello world');
+                testEvent.sourceId = "1";
+                redisEventBus.handleEvent({
+                    messageId: "1",
+                    correlationId: "1",
+                    body: testEvent
+                }, function (error) {
+                    should.equal(error, null);
+
+                    redisEventBus.getClient().lrange('messaging.queuedevents', 0, -1, function (error, results) {
+                        should.equal(error, null);
+                        results.length.should.be.exactly(1);
+                        var eventSerialized = results[0];
+                        var _event = JSON.parse(eventSerialized);
+                        _event.body.message.should.be.exactly(testEvent.message);
+                        done();
+                    });
+                });
+            });
+
+            it('should be possible to persist another event into Redis in the pending commands list', function (done) {
+                var testEvent = new TestEventMessageReceived('hello world');
+                testEvent.sourceId = "1";
+                redisEventBus.handleEvent({
+                    messageId: "1",
+                    correlationId: "1",
+                    body: testEvent
+                }, function (error) {
+                    should.equal(error, null);
+
+                    redisEventBus.getClient().lrange('messaging.queuedevents', 0, -1, function (error, results) {
+                        should.equal(error, null);
+                        results.length.should.be.exactly(2);
+                        var eventSerialized = results[0];
+                        var _event = JSON.parse(eventSerialized);
+                        _event.body.message.should.be.exactly(testEvent.message);
+                        done();
+                    });
+                });
+            });
+
+            after(function (done) {
+                redisEventBus.getClient().del('messaging.queuedevents', function (error) {
                     should.equal(error, null);
                     done();
                 });

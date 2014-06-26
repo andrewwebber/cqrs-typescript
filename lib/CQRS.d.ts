@@ -50,6 +50,21 @@ export declare class EventSourced implements IEventSourced {
     public loadFromEvents(events: IVersionedEvent[]): void;
     public update(versionedEvent: IVersionedEvent): void;
 }
+export declare class RedisResource {
+    private client;
+    constructor(options: IRedisConnectionOptions);
+    public options: IRedisConnectionOptions;
+    public getClient(): Redis.RedisClient;
+    public connect(callback: (error: any) => void): void;
+}
+export declare class RedisCommandBus extends RedisResource implements ICommandHandler {
+    constructor(options: IRedisConnectionOptions);
+    public handleCommand(commandToHandle: IEnvelope<ICommand>, callback: (error: any) => void): void;
+}
+export declare class RedisEventBus extends RedisResource implements IEventHandler {
+    constructor(options: IRedisConnectionOptions);
+    public handleEvent(eventToHandle: IEnvelope<IEvent>, callback: (error: any) => void): void;
+}
 export interface IEventSourcedRepository {
     getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): any;
     saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): any;
@@ -64,12 +79,8 @@ export interface IRedisConnectionOptions {
     host: string;
     port: number;
 }
-export declare class RedisEventSourcedRepository implements IEventSourcedRepository {
-    private client;
-    constructor(options: any);
-    public options: IRedisConnectionOptions;
-    public getClient(): Redis.RedisClient;
-    public connect(callback: (error: any) => void): void;
+export declare class RedisEventSourcedRepository extends RedisResource implements IEventSourcedRepository {
+    constructor(options: IRedisConnectionOptions);
     public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;
     public saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): void;
     private constructResultsResponse(error, results, callback);
