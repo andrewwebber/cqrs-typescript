@@ -25,5 +25,8 @@
     "grunt-mocha-test": "^0.11.0",
     "grunt-typescript": "^0.3.7",
     "should": "^4.0.4"
+  },
+  "dependencies": {
+    "redis": "^0.10.3"
   }
 }
