@@ -1,0 +1,29 @@
+{
+  "name": "console",
+  "version": "0.0.0",
+  "description": "",
+  "main": "lib/CQRS.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andrewwebber/cqrs-typescript"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "files": [
+    "*.js",
+    "*.d.ts",
+    "*.ts"
+  ],
+  "author": "@MrPanigale",
+  "license": "ISC",
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.10.0",
+    "grunt-contrib-nodeunit": "^0.4.1",
+    "grunt-contrib-watch": "^0.6.1",
+    "grunt-mocha-test": "^0.11.0",
+    "grunt-typescript": "^0.3.7",
+    "should": "^4.0.4"
+  }
+}
