@@ -128,5 +128,5 @@ describe('CQRS Tests', function() {
         });
       });
     });
-  })
+  });
 });
