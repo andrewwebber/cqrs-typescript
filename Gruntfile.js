@@ -55,7 +55,7 @@ module.exports = function (grunt) {
             }
           },
           test: {
-            src: ['test/*.ts'],
+            src: ['lib/*.ts', 'test/*.ts'],
             options: {
               module: 'commonjs',
               watch:false,

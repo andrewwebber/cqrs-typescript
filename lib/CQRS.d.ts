@@ -1,3 +1,5 @@
+/// <reference path="node.d.ts" />
+/// <reference path="node_redis.d.ts" />
 export interface IVersionedEvent {
     version: number;
     name: string;
@@ -28,4 +30,17 @@ export declare class InMemoryEventSourcedRepository implements IEventSourcedRepo
     constructor();
     public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;
     public saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): void;
+}
+export interface IRedisConnectionOptions {
+    host: string;
+    port: number;
+}
+export declare class RedisEventSourcedRepository implements IEventSourcedRepository {
+    private client;
+    constructor(options: any);
+    public options: IRedisConnectionOptions;
+    public connect(callback: (error: any) => void): void;
+    public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;
+    public saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): void;
+    private constructResultsResponse(error, results, callback);
 }
