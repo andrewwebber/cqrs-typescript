@@ -2,10 +2,37 @@
 /// <reference path="node_redis.d.ts" />
 /// <reference path="async.d.ts" />
 import Redis = require('redis');
-export interface IVersionedEvent {
-    version: number;
+export interface IEnvelope<T> {
+    body: T;
+    correlationId: string;
+    messageId: string;
+    TTL?: number;
+}
+export interface ICommand {
+    id: string;
     name: string;
+}
+export interface ICommandHandler {
+    handleCommand(commandToHandle: IEnvelope<ICommand>, callback: (error: any) => void): void;
+}
+export interface IEvent {
     sourceId: string;
+    name: string;
+}
+export interface IEventHandler {
+    handleEvent(eventToHandle: IEnvelope<IEvent>, callback: (error: any) => void): void;
+}
+export declare class HandlerRegistry implements ICommandHandler, IEventHandler {
+    constructor();
+    public commandsRegistry: any;
+    public eventsRegistry: any;
+    public registerCommandHandler(commandName: string, commandHandler: ICommandHandler): void;
+    public registerEventHandler(eventName: string, eventHandler: IEventHandler): void;
+    public handleCommand(commandToHandle: IEnvelope<ICommand>, callback: (error: any) => void): void;
+    public handleEvent(eventToHandle: IEnvelope<IEvent>, callback: (error: any) => void): void;
+}
+export interface IVersionedEvent extends IEvent {
+    version: number;
 }
 export interface IEventSourced {
     getId(): string;

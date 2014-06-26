@@ -4,10 +4,77 @@
 import Redis = require('redis');
 import Async = require('async');
 
-export interface IVersionedEvent{
-  version : number;
-  name : string;
+export interface IEnvelope<T>{
+  body : T;
+  correlationId: string;
+  messageId: string;
+  TTL? : number;
+}
+
+export interface ICommand{
+  id: string;
+  name : string
+}
+
+export interface ICommandHandler{
+  handleCommand(commandToHandle : IEnvelope<ICommand>, callback: (error)=>void): void;
+}
+
+export interface IEvent{
   sourceId : string;
+  name : string;
+}
+
+export interface IEventHandler{
+  handleEvent(eventToHandle : IEnvelope<IEvent>, callback: (error)=>void): void;
+}
+
+export class HandlerRegistry implements ICommandHandler, IEventHandler{
+  constructor(){
+      this.commandsRegistry = {};
+      this.eventsRegistry = {};
+  }
+
+  commandsRegistry : any;
+  eventsRegistry : any;
+
+  registerCommandHandler(commandName: string, commandHandler : ICommandHandler){
+    var handlers = this.commandsRegistry[commandName];
+    if(!handlers){
+      handlers = [];
+    }
+
+    handlers.push(commandHandler);
+    this.commandsRegistry[commandName] = handlers;
+  }
+
+  registerEventHandler(eventName: string, eventHandler : IEventHandler){
+    var handlers = this.eventsRegistry[eventName];
+    if(!handlers){
+      handlers = [];
+    }
+
+    handlers.push(eventHandler);
+    this.eventsRegistry[eventName] = handlers;
+  }
+
+  handleCommand(commandToHandle : IEnvelope<ICommand>, callback: (error)=>void){
+    var handlers = this.commandsRegistry[commandToHandle.body.name];
+    Async.forEach(handlers,function(handler : ICommandHandler, callback : (error:any)=>void){
+      handler.handleCommand(commandToHandle,callback);
+    },callback);
+  }
+
+  handleEvent(eventToHandle : IEnvelope<IEvent>, callback: (error)=>void){
+    var handlers = this.eventsRegistry[eventToHandle.body.name];
+    Async.forEach(handlers,function(handler : IEventHandler, callback : (error:any)=>void){
+      handler.handleEvent(eventToHandle,callback);
+    },callback);
+  }
+}
+
+export interface IVersionedEvent extends IEvent{
+  version : number;
 }
 
 export interface IEventSourced{
@@ -97,7 +164,7 @@ export class RedisEventSourcedRepository implements IEventSourcedRepository{
   }
 
   options : IRedisConnectionOptions;
-  
+
   getClient() : Redis.RedisClient{
     return this.client;
   }

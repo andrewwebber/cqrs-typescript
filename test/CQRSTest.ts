@@ -50,6 +50,44 @@ class BankAccount extends CQRS.EventSourced{
   }
 }
 
+class TestCommand implements CQRS.ICommand{
+  constructor(message: string){
+    this.name = 'TestCommand';
+    this.message = message;
+  }
+
+  id :string;
+  name: string;
+  message : string;
+}
+
+class TestCommandHandler implements CQRS.ICommandHandler{
+  handleCommand(commandToHandle : CQRS.IEnvelope<TestCommand>, callback: (error)=>void): void{
+    commandToHandle.body.name.should.be.exactly('TestCommand');
+    commandToHandle.body.message.should.be.exactly('hello world');
+    callback(null);
+  }
+};
+
+class TestEventMessageReceived implements CQRS.IEvent{
+  constructor(message: string){
+    this.name = 'TestEventMessageReceived';
+    this.message = message;
+  }
+
+  sourceId :string;
+  name: string;
+  message : string;
+}
+
+class TestEventMessageReceivedHandler implements CQRS.IEventHandler{
+  handleEvent(eventToHandle : CQRS.IEnvelope<TestEventMessageReceived>, callback: (error)=>void): void{
+    eventToHandle.body.name.should.be.exactly('TestEventMessageReceived');
+    eventToHandle.body.message.should.be.exactly('hello world');
+    callback(null);
+  }
+};
+
 describe('CQRS Tests', function() {
   describe('Core Tests', function(){
     var account :BankAccount;
@@ -113,6 +151,58 @@ describe('CQRS Tests', function() {
           accountFromEvents.loadFromEvents(events);
           accountFromEvents.balance.should.be.exactly(account.balance);
           done();
+        });
+      });
+    });
+
+    describe('Handler registry', function(){
+      var registry = new CQRS.HandlerRegistry();
+
+      describe('command registration',function(){
+        var testCommandHandler = new TestCommandHandler();
+        var commandName = 'TestCommand';
+
+        it('should be possible to register a command handler', function(){
+          registry.registerCommandHandler(commandName, testCommandHandler);
+          var handlers = registry.commandsRegistry[commandName];
+          handlers.length.should.be.exactly(1);
+        });
+
+        it('should be possible to execute a command handler having sending a command through the "HandlerRegistry"',function(done){
+          var testCommand = new TestCommand('hello world');
+          testCommand.id = "1";
+          registry.handleCommand({
+              messageId : "1",
+              correlationId : "1",
+              body: testCommand
+            },(error)=>{
+              should.equal(error, null);
+              done();
+            });
+          });
+      });
+
+      describe('event registration',function(){
+        var testEventHandler = new TestEventMessageReceivedHandler();
+        var eventName = 'TestEventMessageReceived';
+
+        it('should be possible to register an event handler', function(){
+          registry.registerEventHandler(eventName, testEventHandler);
+          var handlers = registry.eventsRegistry[eventName];
+          handlers.length.should.be.exactly(1);
+        });
+
+        it('should be possible to execute an event handler having sending an event through the "HandlerRegistry"',function(done){
+          var testEvent = new TestEventMessageReceived('hello world');
+          testEvent.sourceId = "1";
+          registry.handleEvent({
+              messageId : "1",
+              correlationId : "1",
+              body: testEvent
+            },(error)=>{
+              should.equal(error, null);
+              done();
+          });
         });
       });
     });
