@@ -29,7 +29,7 @@ module.exports = function (grunt) {
                 src: 'gruntfile.js'
             },
             lib_test: {
-                src: ['lib/**/*.js', 'test/**/*.js']
+                src: ['lib/**/*.js']
             }
         },
         nodeunit: {
@@ -47,7 +47,7 @@ module.exports = function (grunt) {
         },
         typescript : {
           development: {
-            src: ['lib/*.ts'],
+            src: ['lib/*.ts', 'test/*.ts'],
             options: {
               module: 'commonjs',
               watch:true,
@@ -59,7 +59,8 @@ module.exports = function (grunt) {
             options: {
               module: 'commonjs',
               watch:false,
-              declaration: true
+              declaration: true,
+              comments:true
             }
           }
         },
@@ -81,6 +82,6 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-mocha-test');
 
     // Default task
-    grunt.registerTask('default', ['jshint', 'typescript:development']);
-    grunt.registerTask('test', ['jshint', 'typescript:test', 'mochaTest']);
+    grunt.registerTask('default', ['typescript:development']);
+    grunt.registerTask('test', ['typescript:test', 'mochaTest']);
 };

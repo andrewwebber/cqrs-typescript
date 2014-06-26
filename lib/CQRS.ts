@@ -49,3 +49,31 @@ export class EventSourced implements IEventSourced {
     this.events.push(versionedEvent);
   }
 }
+
+export interface IEventSourcedRepository {
+  getEventsByAggregateId(id : string, callback : (error : any, events : Array<IVersionedEvent>) => void);
+  saveEventsByAggregateId(id : string, events : Array<IVersionedEvent>,  callback: (error: any) => void);
+}
+
+export class InMemoryEventSourcedRepository implements IEventSourcedRepository{
+  private db : any;
+
+  constructor(){
+      this.db = {};
+  }
+
+  getEventsByAggregateId(id : string, callback : (error : any, events : Array<IVersionedEvent>) => void){
+    if(!this.db[id]) return callback(null,[]);
+
+    var aggregateEvents = this.db[id];
+    callback(null,aggregateEvents);
+  }
+
+  saveEventsByAggregateId(id : string, events : Array<IVersionedEvent>,  callback: (error: any) => void){
+    var aggregateEvents = this.db[id];
+    if(!aggregateEvents) aggregateEvents = [];
+    aggregateEvents = aggregateEvents.concat(events);
+    this.db[id] = aggregateEvents;
+    callback(null);
+  }
+}
