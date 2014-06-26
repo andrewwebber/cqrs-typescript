@@ -50,10 +50,10 @@ class BankAccount extends CQRS.EventSourced{
   }
 }
 
-var account :BankAccount;
-
 describe('CQRS Tests', function() {
   describe('Core Tests', function(){
+    var account :BankAccount;
+
     describe('extending from "EventSourced" to create a "bank account"',function(){
       it('should be ok to create one once supplying an id ', function() {
         account = new BankAccount('1');
@@ -120,11 +120,47 @@ describe('CQRS Tests', function() {
 
   describe('Infrastructure tests',function(){
     describe('redis event sourced provides',function(){
+      var account = new BankAccount('2');
+      account.credit(100);
+      account.credit(100);
+      account.debit(50);
+      account.credit(100);
+      account.debit(200);
+      account.balance.should.be.exactly(50);
+
       var provider = new CQRS.RedisEventSourcedRepository({ host: "127.0.0.1", port:6379});
       it('should connect to a specified Redis server',function(done){
         provider.connect((error)=>{
           should.equal(error, null);
           done();
+        });
+      });
+
+      it('should be able to persist an event stream for an given aggregate id',function(done){
+        var events = account.getEvents();
+        events.length.should.be.exactly(5);
+        provider.saveEventsByAggregateId(account.getId(),events, (error)=>{
+            should.equal(error, null);
+            done();
+        });
+      });
+
+      it('should be able to retrieve an event stream by aggregate id and recreate an aggregate instance',function(done){
+        provider.getEventsByAggregateId(account.getId(),(error, events)=>{
+          should.equal(error, null);
+          events.length.should.be.exactly(5);
+
+          var accountFromEvents = new BankAccount(account.getId());
+          accountFromEvents.loadFromEvents(events);
+          accountFromEvents.balance.should.be.exactly(account.balance);
+          done();
+        });
+      });
+
+      after(function(done){
+        provider.getClient().del('aggregate:' + account.getId(),(error)=>{
+            should.equal(error, null);
+            done();
         });
       });
     });

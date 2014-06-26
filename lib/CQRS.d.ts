@@ -1,5 +1,7 @@
 /// <reference path="node.d.ts" />
 /// <reference path="node_redis.d.ts" />
+/// <reference path="async.d.ts" />
+import Redis = require('redis');
 export interface IVersionedEvent {
     version: number;
     name: string;
@@ -39,6 +41,7 @@ export declare class RedisEventSourcedRepository implements IEventSourcedReposit
     private client;
     constructor(options: any);
     public options: IRedisConnectionOptions;
+    public getClient(): Redis.RedisClient;
     public connect(callback: (error: any) => void): void;
     public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;
     public saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): void;

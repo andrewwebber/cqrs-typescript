@@ -1,7 +1,8 @@
 /// <reference path="node.d.ts"/>
 /// <reference path="node_redis.d.ts"/>
+/// <reference path="async.d.ts"/>
 import Redis = require('redis');
-
+import Async = require('async');
 
 export interface IVersionedEvent{
   version : number;
@@ -96,12 +97,16 @@ export class RedisEventSourcedRepository implements IEventSourcedRepository{
   }
 
   options : IRedisConnectionOptions;
+  
+  getClient() : Redis.RedisClient{
+    return this.client;
+  }
 
   connect(callback : (error)=>void ):void{
     this.client = Redis.createClient(this.options.port, this.options.host);
 
     this.client.on('error', function(errorMessage){
-      if (errorMessage.indexOf && errorMessage.indexOf('connect') >= 0) {        
+      if (errorMessage.indexOf && errorMessage.indexOf('connect') >= 0) {
         callback(errorMessage);
       }
     });
@@ -110,8 +115,9 @@ export class RedisEventSourcedRepository implements IEventSourcedRepository{
   }
 
   getEventsByAggregateId(id : string, callback : (error : any, events : Array<IVersionedEvent>) => void){
+    var self = this;
     this.client.lrange('aggregate:' + id,0,-1, function(error, results){
-      this.constructResultsResponse(error, results, callback);
+      self.constructResultsResponse(error, results, callback);
     });
   }
 
@@ -122,13 +128,13 @@ export class RedisEventSourcedRepository implements IEventSourcedRepository{
     }
 
     var self = this;
-    events.forEach(function(versionedEvent : IVersionedEvent){
+    Async.forEachSeries(events, function(versionedEvent : IVersionedEvent, callback : (error:any)=>void){
       var serializedEvent = JSON.stringify(versionedEvent);
       self.client.rpush('aggregate:' + versionedEvent.sourceId, serializedEvent, function(error){
         if(error) return callback(error);
         callback(null);
       });
-    });
+    },callback);
   }
 
   private constructResultsResponse(error : any, results : Array<string>, callback : (error: any, results: Array<IVersionedEvent>)=>void){
