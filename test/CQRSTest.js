@@ -66,6 +66,18 @@ var TestCommandHandler = (function () {
 })();
 ;
 
+var RedisCommandReceiverTestHandler = (function () {
+    function RedisCommandReceiverTestHandler(done) {
+        this.done = done;
+        this.callCount = 0;
+    }
+    RedisCommandReceiverTestHandler.prototype.handleCommand = function (commandToHandle, callback) {
+        callback(null);
+        this.done();
+    };
+    return RedisCommandReceiverTestHandler;
+})();
+
 var TestEventMessageReceived = (function () {
     function TestEventMessageReceived(message) {
         this.name = 'TestEventMessageReceived';
@@ -301,6 +313,22 @@ describe('CQRS Tests', function () {
                         var command = JSON.parse(commandSerialized);
                         command.body.message.should.be.exactly(testCommand.message);
                         done();
+                    });
+                });
+            });
+
+            describe('using the "RedisCommandReceiver"', function () {
+                it('should be possible to receive pending commands using the "RedisCommandReceiver"', function (done) {
+                    var redisCommandReceiverTestHandler = new RedisCommandReceiverTestHandler(function () {
+                        redisCommandReceiverTestHandler.callCount += 1;
+                        if (redisCommandReceiverTestHandler.callCount == 2)
+                            return done();
+                    });
+
+                    var redisCommandReceiver = new CQRS.RedisCommandReceiver({ host: "127.0.0.1", port: 6379 }, redisCommandReceiverTestHandler);
+
+                    redisCommandReceiver.connect(function (error) {
+                        should.equal(error, null);
                     });
                 });
             });

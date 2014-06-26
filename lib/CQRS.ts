@@ -145,7 +145,47 @@ export class RedisResource {
       }
     });
 
-    this.client.on('ready', callback);
+    var self = this;
+    this.client.on('ready', ()=>{
+        if(self['onConnected']){
+          self['onConnected']();
+        }
+
+        callback(null);
+    });
+  }
+}
+
+export class RedisCommandReceiver extends RedisResource{
+  constructor(options: IRedisConnectionOptions, commandReceiver : ICommandHandler){
+    super(options);
+    this.commandReceiver = commandReceiver;
+  }
+
+  commandReceiver : ICommandHandler;
+  paused : boolean;
+
+  onConnected(){
+    var self = this;
+    var receiveLoop = function(){
+      if(self.paused) return setTimeout(receiveLoop, 500);
+
+      self.getClient().rpoplpush('messaging.queuedcommands','messaging.activecommands',function(error, result){
+        if(result){
+          var command = JSON.parse(result);
+          self.commandReceiver.handleCommand(command, (error)=>{
+            self.getClient().lrem('messaging.activecommands', 0, result,function(error, count){
+              if(count !== 1)throw "invalid count " + count;
+              receiveLoop();
+            });
+          });
+        }
+
+        setTimeout(receiveLoop, 500);
+      });
+    };
+
+    receiveLoop();
   }
 }
 

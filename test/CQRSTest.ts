@@ -69,6 +69,20 @@ class TestCommandHandler implements CQRS.ICommandHandler{
   }
 };
 
+class RedisCommandReceiverTestHandler implements CQRS.ICommandHandler{
+  constructor(done){
+    this.done = done;
+    this.callCount = 0;
+  }
+
+  done : ()=>void;
+  callCount : number;
+  handleCommand(commandToHandle : CQRS.IEnvelope<TestCommand>, callback: (error)=>void): void{
+    callback(null);
+    this.done();
+  }
+}
+
 class TestEventMessageReceived implements CQRS.IEvent{
   constructor(message: string){
     this.name = 'TestEventMessageReceived';
@@ -305,6 +319,23 @@ describe('CQRS Tests', function() {
               done();
           });
         });
+      });
+
+      describe('using the "RedisCommandReceiver"',function(){
+          it('should be possible to receive pending commands using the "RedisCommandReceiver"',function(done){
+            var redisCommandReceiverTestHandler = new RedisCommandReceiverTestHandler(()=>{
+              redisCommandReceiverTestHandler.callCount +=1;
+              if(redisCommandReceiverTestHandler.callCount == 2) return done();
+            });
+
+            var redisCommandReceiver = new CQRS.RedisCommandReceiver(
+              { host: "127.0.0.1", port:6379},
+              redisCommandReceiverTestHandler);
+
+            redisCommandReceiver.connect((error)=>{
+              should.equal(error, null);
+            });
+          });
       });
 
       after(function(done){

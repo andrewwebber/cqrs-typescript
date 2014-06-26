@@ -57,6 +57,12 @@ export declare class RedisResource {
     public getClient(): Redis.RedisClient;
     public connect(callback: (error: any) => void): void;
 }
+export declare class RedisCommandReceiver extends RedisResource {
+    constructor(options: IRedisConnectionOptions, commandReceiver: ICommandHandler);
+    public commandReceiver: ICommandHandler;
+    public paused: boolean;
+    public onConnected(): void;
+}
 export declare class RedisCommandBus extends RedisResource implements ICommandHandler {
     constructor(options: IRedisConnectionOptions);
     public handleCommand(commandToHandle: IEnvelope<ICommand>, callback: (error: any) => void): void;
