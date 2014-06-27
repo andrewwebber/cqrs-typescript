@@ -1,13 +1,9 @@
-/// <reference path="mocha.d.ts"/>
-/// <reference path="should.d.ts"/>
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-/*global describe, it, import */
-/*jslint node: true */
 var CQRS = require('../lib/CQRS');
 var should = require('should');
 should.equal('actual', 'actual');
@@ -76,6 +72,20 @@ var RedisCommandReceiverTestHandler = (function () {
         this.done();
     };
     return RedisCommandReceiverTestHandler;
+})();
+
+var RedisEventReceiverTestHandler = (function () {
+    function RedisEventReceiverTestHandler(done, expectedMessage) {
+        this.done = done;
+        this.callCount = 0;
+        this.expectedMessage = expectedMessage;
+    }
+    RedisEventReceiverTestHandler.prototype.handleEvent = function (eventToHandle, callback) {
+        eventToHandle.body.message.should.be.exactly(this.expectedMessage);
+        callback(null);
+        this.done();
+    };
+    return RedisEventReceiverTestHandler;
 })();
 
 var TestEventMessageReceived = (function () {
@@ -388,6 +398,22 @@ describe('CQRS Tests', function () {
                         var _event = JSON.parse(eventSerialized);
                         _event.body.message.should.be.exactly(testEvent.message);
                         done();
+                    });
+                });
+            });
+
+            describe('using the "RedisEventReceiver"', function () {
+                it('should be possible to receive pending events using the "RedisEventReceiver"', function (done) {
+                    var redisEventReceiverTestHandler = new RedisEventReceiverTestHandler(function () {
+                        redisEventReceiverTestHandler.callCount += 1;
+                        if (redisEventReceiverTestHandler.callCount == 2)
+                            return done();
+                    }, 'hello world');
+
+                    var redisEventReceiver = new CQRS.RedisEventReceiver({ host: "127.0.0.1", port: 6379 }, redisEventReceiverTestHandler);
+
+                    redisEventReceiver.connect(function (error) {
+                        should.equal(error, null);
                     });
                 });
             });

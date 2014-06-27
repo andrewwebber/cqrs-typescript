@@ -63,6 +63,12 @@ export declare class RedisCommandReceiver extends RedisResource {
     public paused: boolean;
     public onConnected(): void;
 }
+export declare class RedisEventReceiver extends RedisResource {
+    constructor(options: IRedisConnectionOptions, eventReceiver: IEventHandler);
+    public eventReceiver: IEventHandler;
+    public paused: boolean;
+    public onConnected(): void;
+}
 export declare class RedisCommandBus extends RedisResource implements ICommandHandler {
     constructor(options: IRedisConnectionOptions);
     public handleCommand(commandToHandle: IEnvelope<ICommand>, callback: (error: any) => void): void;

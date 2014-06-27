@@ -83,6 +83,23 @@ class RedisCommandReceiverTestHandler implements CQRS.ICommandHandler{
   }
 }
 
+class RedisEventReceiverTestHandler implements CQRS.IEventHandler{
+  constructor(done, expectedMessage){
+    this.done = done;
+    this.callCount = 0;
+    this.expectedMessage = expectedMessage;
+  }
+
+  expectedMessage : string;
+  done : ()=>void;
+  callCount : number;
+  handleEvent(eventToHandle : CQRS.IEnvelope<TestEventMessageReceived>, callback: (error)=>void): void{
+    eventToHandle.body.message.should.be.exactly(this.expectedMessage);
+    callback(null);
+    this.done();
+  }
+}
+
 class TestEventMessageReceived implements CQRS.IEvent{
   constructor(message: string){
     this.name = 'TestEventMessageReceived';
@@ -396,6 +413,23 @@ describe('CQRS Tests', function() {
               done();
           });
         });
+      });
+
+      describe('using the "RedisEventReceiver"',function(){
+          it('should be possible to receive pending events using the "RedisEventReceiver"',function(done){
+            var redisEventReceiverTestHandler = new RedisEventReceiverTestHandler(()=>{
+              redisEventReceiverTestHandler.callCount +=1;
+              if(redisEventReceiverTestHandler.callCount == 2) return done();
+            },'hello world');
+
+            var redisEventReceiver = new CQRS.RedisEventReceiver(
+              { host: "127.0.0.1", port:6379},
+              redisEventReceiverTestHandler);
+
+            redisEventReceiver.connect((error)=>{
+              should.equal(error, null);
+            });
+          });
       });
 
       after(function(done){

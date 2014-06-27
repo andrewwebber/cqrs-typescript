@@ -189,6 +189,39 @@ export class RedisCommandReceiver extends RedisResource{
   }
 }
 
+export class RedisEventReceiver extends RedisResource{
+  constructor(options: IRedisConnectionOptions, eventReceiver : IEventHandler){
+    super(options);
+    this.eventReceiver = eventReceiver;
+  }
+
+  eventReceiver : IEventHandler;
+  paused : boolean;
+
+  onConnected(){
+    var self = this;
+    var receiveLoop = function(){
+      if(self.paused) return setTimeout(receiveLoop, 500);
+
+      self.getClient().rpoplpush('messaging.queuedevents','messaging.activeevents',function(error, result){
+        if(result){
+          var _event = JSON.parse(result);
+          self.eventReceiver.handleEvent(_event, (error)=>{
+            self.getClient().lrem('messaging.activeevents', 0, result,function(error, count){
+              if(count !== 1) throw 'invalid "messaging.activeevents" count ' + count;
+              receiveLoop();
+            });
+          });
+        }
+
+        setTimeout(receiveLoop, 500);
+      });
+    };
+
+    receiveLoop();
+  }
+}
+
 export class RedisCommandBus extends RedisResource implements ICommandHandler{
   constructor(options : IRedisConnectionOptions){
     super(options);
