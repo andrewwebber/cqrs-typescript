@@ -8,7 +8,7 @@ var __extends = this.__extends || function (d, b) {
 };
 /*global describe, it, import */
 /*jslint node: true */
-var CQRS = require('../lib/CQRS');
+var CQRS = require('../lib/cqrs-typescript');
 var should = require('should');
 should.equal('actual', 'actual');
 

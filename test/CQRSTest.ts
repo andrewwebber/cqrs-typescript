@@ -3,7 +3,7 @@
 
 /*global describe, it, import */
 /*jslint node: true */
-import CQRS = require('../lib/CQRS');
+import CQRS = require('../lib/cqrs-typescript');
 import should = require('should');
 should.equal('actual', 'actual');
 
