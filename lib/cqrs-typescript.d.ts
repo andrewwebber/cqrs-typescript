@@ -91,6 +91,13 @@ export interface IRedisConnectionOptions {
     host: string;
     port: number;
 }
+export declare class EventSourceRepositoryWithNotifications implements IEventSourcedRepository {
+    constructor(repository: IEventSourcedRepository, onSaveCallback: (id: string, events: IVersionedEvent[]) => void);
+    public repository: IEventSourcedRepository;
+    public onSaveCallback: (id: string, events: IVersionedEvent[]) => void;
+    public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;
+    public saveEventsByAggregateId(id: string, events: IVersionedEvent[], callback: (error: any) => void): void;
+}
 export declare class RedisEventSourcedRepository extends RedisResource implements IEventSourcedRepository {
     constructor(options: IRedisConnectionOptions);
     public getEventsByAggregateId(id: string, callback: (error: any, events: IVersionedEvent[]) => void): void;

@@ -268,7 +268,32 @@ describe('CQRS Tests', function () {
                     var accountFromEvents = new BankAccount(account.getId());
                     accountFromEvents.loadFromEvents(events);
                     accountFromEvents.balance.should.be.exactly(account.balance);
+                    accountFromEvents.getEvents().length.should.be.exactly(0);
                     done();
+                });
+            });
+
+            describe('using an "EventSourceRepositoryWithNotifications"', function () {
+                it('should be able to persist an event can get notified via a callback', function (done) {
+                    var eventSourceRepositoryWithNotifications = new CQRS.EventSourceRepositoryWithNotifications(provider, function (id, events) {
+                        id.should.be.exactly('2');
+                        events.length.should.be.exactly(2);
+                        events[1].amount.should.be.exactly(70);
+                        done();
+                    });
+
+                    var accountFromEvents = new BankAccount(account.getId());
+                    accountFromEvents.loadFromEvents(account.getEvents());
+                    accountFromEvents.balance.should.be.exactly(account.balance);
+                    accountFromEvents.getEvents().length.should.be.exactly(0);
+
+                    accountFromEvents.credit(230);
+                    accountFromEvents.credit(70);
+                    accountFromEvents.getEvents().length.should.be.exactly(2);
+
+                    eventSourceRepositoryWithNotifications.saveEventsByAggregateId(accountFromEvents.getId(), accountFromEvents.getEvents(), function (error) {
+                        should.equal(error, null);
+                    });
                 });
             });
 
