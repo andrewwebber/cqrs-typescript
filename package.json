@@ -1,6 +1,6 @@
 {
   "name": "cqrs-typescript",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "A Typescript friendly library for writing event sourcing or CQRS apps.",
   "main": "lib/CQRS.js",
   "keywords" : [
@@ -15,11 +15,10 @@
   "scripts": {
     "test": "node-debug ./node_modules/grunt-cli/bin/grunt test"
   },
-  "files": [
-    "*.js",
-    "*.d.ts",
-    "*.ts"
-  ],
+  "directories" : {
+    "lib" : "lib",
+    "test" : "test"
+  },
   "author": "@MrPanigale",
   "license": "ISC",
   "devDependencies": {
