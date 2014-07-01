@@ -83,5 +83,6 @@ module.exports = function (grunt) {
 
     // Default task
     grunt.registerTask('default', ['typescript:development']);
+    grunt.registerTask('ts', ['typescript:development']);
     grunt.registerTask('test', ['typescript:test', 'mochaTest']);
 };
