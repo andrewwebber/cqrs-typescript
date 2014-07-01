@@ -60,6 +60,8 @@ export class HandlerRegistry implements ICommandHandler, IEventHandler{
 
   handleCommand(commandToHandle : IEnvelope<ICommand>, callback: (error)=>void){
     var handlers = this.commandsRegistry[commandToHandle.body.name];
+    if(!handlers) return callback(null);
+
     Async.forEach(handlers,function(handler : ICommandHandler, callback : (error:any)=>void){
       handler.handleCommand(commandToHandle,callback);
     },callback);
@@ -67,6 +69,8 @@ export class HandlerRegistry implements ICommandHandler, IEventHandler{
 
   handleEvent(eventToHandle : IEnvelope<IEvent>, callback: (error)=>void){
     var handlers = this.eventsRegistry[eventToHandle.body.name];
+    if(!handlers) return callback(null);
+    
     Async.forEach(handlers,function(handler : IEventHandler, callback : (error:any)=>void){
       handler.handleEvent(eventToHandle,callback);
     },callback);

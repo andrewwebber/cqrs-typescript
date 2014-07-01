@@ -1,6 +1,6 @@
 {
   "name": "cqrs-typescript",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A Typescript friendly library for writing event sourcing or CQRS apps.",
   "main": "lib/cqrs-typescript.js",
   "keywords" : [
