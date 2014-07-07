@@ -70,7 +70,7 @@ export class HandlerRegistry implements ICommandHandler, IEventHandler{
   handleEvent(eventToHandle : IEnvelope<IEvent>, callback: (error)=>void){
     var handlers = this.eventsRegistry[eventToHandle.body.name];
     if(!handlers) return callback(null);
-    
+
     Async.forEach(handlers,function(handler : IEventHandler, callback : (error:any)=>void){
       handler.handleEvent(eventToHandle,callback);
     },callback);
@@ -177,7 +177,7 @@ export class RedisCommandReceiver extends RedisResource{
       self.getClient().rpoplpush('messaging.queuedcommands','messaging.activecommands',function(error, result){
         if(result){
           var command = JSON.parse(result);
-          self.commandReceiver.handleCommand(command, (error)=>{
+          return self.commandReceiver.handleCommand(command, (error)=>{
             self.getClient().lrem('messaging.activecommands', 0, result,function(error, count){
               if(count !== 1)throw "invalid count " + count;
               receiveLoop();
@@ -210,7 +210,7 @@ export class RedisEventReceiver extends RedisResource{
       self.getClient().rpoplpush('messaging.queuedevents','messaging.activeevents',function(error, result){
         if(result){
           var _event = JSON.parse(result);
-          self.eventReceiver.handleEvent(_event, (error)=>{
+          return self.eventReceiver.handleEvent(_event, (error)=>{
             self.getClient().lrem('messaging.activeevents', 0, result,function(error, count){
               if(count !== 1) throw 'invalid "messaging.activeevents" count ' + count;
               receiveLoop();
