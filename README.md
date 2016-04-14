@@ -3,8 +3,6 @@ cqrs-typescript
 
 ###CQRS implementation in typescript.
 
-
-
 Components avaliable:
 - Event Sourcing
   - Interfaces for creating versioned events
@@ -24,7 +22,7 @@ View the tests for more examples on usage.
 
 ####Event Sourcing
 
-```
+```typescript
 /// <reference path="mocha.d.ts"/>
 /// <reference path="should.d.ts"/>
 
@@ -114,7 +112,8 @@ describe('extending from "EventSourced" to create a "bank account"', function() 
 ```
 
 ####Redis based event sourcing repository
-```
+
+```typescript
 var account = new BankAccount('2');
 account.credit(100);
 account.credit(100);
